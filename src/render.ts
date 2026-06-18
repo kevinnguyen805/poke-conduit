@@ -6,6 +6,7 @@
  */
 import type { CouncilResult } from "./agents/council";
 import type { BacklogItem, Recipe, Run, Status, Trigger } from "./store/types";
+import type { StepOutcome } from "./tools/recipe-runner";
 
 const PIN = "📌";
 const DOT = "•";
@@ -70,15 +71,56 @@ export function renderStatusSet(status: Status): string {
   return `Status set: ${renderStatus(status).replace(/^You're currently /, "")}`;
 }
 
+/** Count the runnable steps a recipe carries (0 for a prompt-only recipe). */
+function stepCount(recipe: Recipe): number {
+  try {
+    const parsed = JSON.parse(recipe.steps);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+const plural = (n: number, unit: string): string => `${n} ${unit}${n === 1 ? "" : "s"}`;
+
 export function renderRecipes(recipes: Recipe[]): string {
   if (recipes.length === 0) return "No recipes installed yet.";
   return recipes
-    .map((r) => `${DOT} ${r.name}${r.enabled ? "" : " (off)"}`)
+    .map((r) => {
+      const n = stepCount(r);
+      const suffix = n > 0 ? ` (${plural(n, "step")})` : "";
+      return `${DOT} ${r.name}${suffix}${r.enabled ? "" : " (off)"}`;
+    })
     .join("\n");
 }
 
 export function renderRecipeInstalled(recipe: Recipe): string {
-  return `Installed recipe "${recipe.name}".`;
+  const n = stepCount(recipe);
+  return n > 0
+    ? `Installed recipe "${recipe.name}" (${plural(n, "step")}). Say "run ${recipe.name}" to execute it.`
+    : `Installed recipe "${recipe.name}".`;
+}
+
+/** First non-empty line of a step's text, trimmed to keep the digest scannable. */
+function digest(text: string): string {
+  const line = text.split("\n").find((l) => l.trim().length > 0)?.trim() ?? "";
+  return line.length > 120 ? `${line.slice(0, 117)}…` : line;
+}
+
+/**
+ * Outcome of running a recipe: a header summarizing how far it got, then one
+ * ✓/✗ line per executed step. `planned` is how many steps were supposed to run,
+ * so a short run (a step failed and stopped the chain) reads as "stopped at…".
+ */
+export function renderRecipeRun(name: string, outcomes: StepOutcome[], planned: number): string {
+  const ran = outcomes.length;
+  const allOk = outcomes.every((o) => o.ok);
+  const head =
+    allOk && ran === planned
+      ? `▶️ Ran your "${name}" routine — ${plural(planned, "step")} ✓`
+      : `▶️ Ran your "${name}" routine — stopped at step ${ran}/${planned} ✗`;
+  const body = outcomes.map((o) => `${o.ok ? "✓" : "✗"} ${o.tool}: ${digest(o.text)}`).join("\n");
+  return body ? `${head}\n${body}` : head;
 }
 
 export function renderReminderAdded(t: Trigger): string {

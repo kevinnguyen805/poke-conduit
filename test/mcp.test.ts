@@ -61,12 +61,12 @@ describe("handleMcp — lifecycle", () => {
     expect(body.result.capabilities.tools).toBeDefined();
   });
 
-  it("tools/list returns the full 12-tool surface", async () => {
+  it("tools/list returns the full 13-tool surface", async () => {
     const res = await handleMcp(post(rpc("tools/list")), await deps());
     const body = await readJson(res);
     const names: string[] = body.result.tools.map((t: { name: string }) => t.name);
-    expect(names.length).toBe(12);
-    for (const n of ["add_note", "list_backlog", "ask_council", "set_reminder", "set_status", "install_recipe"]) {
+    expect(names.length).toBe(13);
+    for (const n of ["add_note", "list_backlog", "ask_council", "set_reminder", "set_status", "install_recipe", "run_recipe"]) {
       expect(names).toContain(n);
     }
   });

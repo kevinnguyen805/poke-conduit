@@ -21,6 +21,7 @@ export const TABLES: string[] = [
     name text NOT NULL,
     prompt text NOT NULL DEFAULT '',
     integrations text NOT NULL DEFAULT '[]',
+    steps text NOT NULL DEFAULT '[]',
     enabled boolean NOT NULL DEFAULT false,
     created_at text NOT NULL
   )`,
@@ -60,6 +61,24 @@ export const TABLES: string[] = [
   )`,
 ];
 
+/**
+ * Additive, idempotent column migrations for tables that may already exist in a
+ * long-lived database (CREATE TABLE IF NOT EXISTS never alters an existing table).
+ * Each runs best-effort — a driver that lacks ADD COLUMN IF NOT EXISTS, or a
+ * column that already exists, must not abort boot.
+ */
+export const MIGRATIONS: string[] = [
+  `ALTER TABLE pc_recipes ADD COLUMN IF NOT EXISTS steps text NOT NULL DEFAULT '[]'`,
+];
+
 export async function applySchema(sql: Sql): Promise<void> {
   for (const stmt of TABLES) await sql(stmt);
+  for (const stmt of MIGRATIONS) {
+    try {
+      await sql(stmt);
+    } catch {
+      // Best-effort: the column may already exist, or the driver may not
+      // support IF NOT EXISTS on ALTER. Either way, boot must continue.
+    }
+  }
 }

@@ -7,7 +7,7 @@ import type { ToolDef } from "./types";
 const askCouncil: ToolDef = {
   name: "ask_council",
   description:
-    "Convene a multi-agent council (Builder, Skeptic, Operator, User-Advocate) to deliberate a hard, open-ended, or high-stakes question and return a synthesized recommendation. Use for judgement calls and trade-offs — not for simple factual lookups. deliver='return' waits and replies inline; deliver='async' returns immediately and the verdict is pushed to the user when ready.",
+    "Convene a multi-agent council (Builder, Skeptic, Operator, User-Advocate, Strategist, Pragmatist) to deliberate a hard, open-ended, or high-stakes question and return a synthesized recommendation. Use for judgement calls and trade-offs — not for simple factual lookups. deliver='return' waits and replies inline; deliver='async' returns immediately and the verdict is pushed to the user when ready.",
   inputSchema: {
     type: "object",
     properties: {

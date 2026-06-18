@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>poke-conduit — the durable brain Poke consults</title>
-<meta name="description" content="A production-shaped, multi-agent MCP server that Poke calls as a client. 12 tools across 4 capabilities: backlog, multi-agent council, reminders, status & recipes." />
+<meta name="description" content="A production-shaped, multi-agent MCP server that Poke calls as a client. 13 tools across 4 capabilities: backlog, multi-agent council, reminders, status & recipes." />
 <meta property="og:title" content="poke-conduit" />
 <meta property="og:description" content="The durable brain Poke consults — a multi-agent MCP server Poke calls as a client." />
 <meta property="og:type" content="website" />
@@ -78,7 +78,7 @@
   <div class="brand"><span class="bar">▮</span> poke-conduit</div>
   <h1>The durable brain Poke consults.</h1>
   <p class="lede">A production-shaped, multi-agent <strong>MCP server</strong> that Poke calls as a client — the inversion that turns an iMessage front-end into a durable agent backend.</p>
-  <div class="chips"><b>live</b> · <b>12</b> tools · <b>4</b> capabilities · <b>101</b> tests · <b>3</b> deps · edge runtime</div>
+  <div class="chips"><b>live</b> · <b>13</b> tools · <b>4</b> capabilities · <b>120</b> tests · <b>3</b> deps · edge runtime</div>
 
   <section>
     <div class="kicker">01 — What it is</div>
@@ -92,7 +92,7 @@
 
   <section>
     <div class="kicker">02 — What it does</div>
-    <h2>12 tools across four capabilities.</h2>
+    <h2>13 tools across four capabilities.</h2>
 
     <div class="cap">
       <h3>Queued-notes backlog <span class="muted" style="font-weight:400">— flagship</span></h3>
@@ -103,7 +103,7 @@
     <div class="cap">
       <h3>Council — multi-agent</h3>
       <div class="tools">ask_council · council_status</div>
-      <p class="desc">Fans a hard question out to four persona agents — Builder, Skeptic, Operator, User-Advocate — then a synthesizer makes the call. Reply inline, or return now and <strong>push</strong> the verdict when it's ready.</p>
+      <p class="desc">Fans a hard question out to six persona agents — Builder, Skeptic, Operator, User-Advocate, Strategist, Pragmatist — then a synthesizer makes the call. Reply inline, or return now and <strong>push</strong> the verdict when it's ready.</p>
     </div>
 
     <div class="cap">
@@ -114,8 +114,8 @@
 
     <div class="cap">
       <h3>Status &amp; recipes</h3>
-      <div class="tools">get_status · set_status · list_recipes · install_recipe</div>
-      <p class="desc">Availability / DND (active · dnd · deep_work) and saved named routines.</p>
+      <div class="tools">get_status · set_status · list_recipes · install_recipe · run_recipe</div>
+      <p class="desc">Availability / DND (active · dnd · deep_work) and saved routines — a recipe can be a free-text prompt or an <strong>executable macro</strong> of conduit tool-calls that <code>run_recipe</code> dispatches in order.</p>
     </div>
   </section>
 
@@ -142,8 +142,8 @@
     <h2>Zero credentials required.</h2>
     <p class="muted" style="margin-bottom:12px">Falls back to pg-mem + a mock model + a mock Poke client.</p>
     <pre>npm install
-npm test       # 101 tests — unit, tool handlers, full MCP wire e2e
-npm run demo   # narrated, self-asserting walkthrough (19 checks)
+npm test       # 120 tests — unit, tool handlers, full MCP wire e2e
+npm run demo   # narrated, self-asserting walkthrough (21 checks)
 npm run serve  # local HTTP: GET / · POST /mcp · GET /cron · GET /healthz</pre>
   </section>
 

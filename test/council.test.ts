@@ -18,7 +18,7 @@ describe("runCouncil", () => {
   it("produces one position per panel member plus a synthesis", async () => {
     const res = await runCouncil(new LocalStep(), new MockModel(), input());
     expect(res.positions.map((p) => p.persona)).toEqual(PANEL.map((p) => p.key));
-    expect(res.positions.length).toBe(4);
+    expect(res.positions.length).toBe(PANEL.length);
     expect(res.synthesis.length).toBeGreaterThan(0);
     expect(res.question).toBe(Q);
   });
@@ -26,7 +26,7 @@ describe("runCouncil", () => {
   it("personas produce distinct positions", async () => {
     const res = await runCouncil(new LocalStep(), new MockModel(), input());
     const texts = new Set(res.positions.map((p) => p.text));
-    expect(texts.size).toBe(4); // all different
+    expect(texts.size).toBe(PANEL.length); // all different
   });
 
   it("is deterministic across independent runs (offline)", async () => {
@@ -44,7 +44,7 @@ describe("runCouncil", () => {
     const step = new LocalStep();
     await runCouncil(step, model, input());
     await runCouncil(step, model, input()); // same step → all cached
-    expect(calls).toBe(5); // 4 personas + 1 synth, once total
+    expect(calls).toBe(PANEL.length + 1); // N personas + 1 synth, once total
   });
 
   it("feeds every persona's position into the synthesizer", async () => {

@@ -3,12 +3,16 @@ import type { CouncilResult } from "../src/agents/council";
 import {
   renderBacklogList,
   renderCouncil,
+  renderRecipeInstalled,
+  renderRecipeRun,
+  renderRecipes,
   renderReminderAdded,
   renderReminderList,
   renderRunStatus,
   renderStatus,
 } from "../src/render";
-import type { BacklogItem, Run, Status, Trigger } from "../src/store/types";
+import type { BacklogItem, Recipe, Run, Status, Trigger } from "../src/store/types";
+import type { StepOutcome } from "../src/tools/recipe-runner";
 
 const item = (over: Partial<BacklogItem> = {}): BacklogItem => ({
   id: "bk_1",
@@ -93,6 +97,59 @@ describe("renderStatus", () => {
     const out = renderStatus(s({ status: "deep_work", note: "release", until: "2026-06-18T21:00:00.000Z" }));
     expect(out).toContain("release");
     expect(out).toContain("2026-06-18T21:00:00.000Z");
+  });
+});
+
+describe("recipes", () => {
+  const r = (over: Partial<Recipe> = {}): Recipe => ({
+    id: "rcp_1",
+    user_id: "u",
+    name: "morning brief",
+    prompt: "",
+    integrations: "[]",
+    steps: "[]",
+    enabled: true,
+    created_at: "2026-06-18T00:00:00.000Z",
+    ...over,
+  });
+
+  it("renderRecipeInstalled distinguishes prompt-only from executable", () => {
+    expect(renderRecipeInstalled(r({ prompt: "summarize" }))).toBe(
+      'Installed recipe "morning brief".',
+    );
+    const withSteps = renderRecipeInstalled(
+      r({ steps: JSON.stringify([{ tool: "add_note", args: { text: "x" } }]) }),
+    );
+    expect(withSteps).toContain("1 step");
+    expect(withSteps).toContain('run morning brief');
+  });
+
+  it("renderRecipes shows step counts and the off marker", () => {
+    expect(renderRecipes([])).toBe("No recipes installed yet.");
+    const out = renderRecipes([
+      r({ name: "a", steps: JSON.stringify([{ tool: "add_note", args: {} }, { tool: "add_note", args: {} }]) }),
+      r({ name: "b", enabled: false }),
+    ]);
+    expect(out).toContain("a (2 steps)");
+    expect(out).toContain("b (off)");
+  });
+
+  it("renderRecipeRun summarizes a full run and an early stop", () => {
+    const ok: StepOutcome[] = [
+      { tool: "set_status", ok: true, text: "Status set: deep work" },
+      { tool: "add_note", ok: true, text: 'Added to your backlog: "x" (1 open).' },
+    ];
+    const full = renderRecipeRun("kickoff", ok, 2);
+    expect(full).toContain("2 steps ✓");
+    expect(full).toContain("✓ set_status: Status set: deep work");
+
+    const stopped: StepOutcome[] = [
+      { tool: "add_note", ok: true, text: "ok" },
+      { tool: "add_note", ok: false, text: "Required" },
+    ];
+    const partial = renderRecipeRun("kickoff", stopped, 3);
+    expect(partial).toContain("stopped at step 2/3 ✗");
+    expect(partial).toContain("✗ add_note: Required");
   });
 });
 

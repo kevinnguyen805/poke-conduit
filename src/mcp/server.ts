@@ -9,11 +9,12 @@ export const SERVER_INFO = { name: "poke-conduit", version: "0.1.0" } as const;
 export const INSTRUCTIONS =
   "poke-conduit is the user's durable second brain, consulted over this chat. It offers: " +
   "a queued-notes backlog (add_note / list_backlog / complete_note / pin_note); a multi-agent " +
-  "COUNCIL for hard judgement calls (ask_council convenes Builder, Skeptic, Operator and " +
-  "User-Advocate, then a synthesizer makes the call; council_status checks an async run); " +
-  "proactive reminders (set_reminder / list_reminders — convert the user's natural time into an " +
-  "absolute ISO-8601 UTC timestamp yourself before calling); availability/DND (get_status / " +
-  "set_status); and saved recipes (list_recipes / install_recipe). " +
+  "COUNCIL for hard judgement calls (ask_council convenes Builder, Skeptic, Operator, " +
+  "User-Advocate, Strategist and Pragmatist, then a synthesizer makes the call; council_status " +
+  "checks an async run); proactive reminders (set_reminder / list_reminders — convert the user's " +
+  "natural time into an absolute ISO-8601 UTC timestamp yourself before calling); availability/DND " +
+  "(get_status / set_status); and saved recipes (list_recipes / install_recipe / run_recipe — a " +
+  "recipe can be a free-text prompt or an executable macro of conduit tool-calls). " +
   "When the user first connects, briefly introduce these abilities, then wait — do NOT act " +
   "automatically. Only add_note when they want to save something, only ask_council for genuine " +
   "trade-offs and decisions (never simple factual lookups), only set_reminder when they ask to be " +

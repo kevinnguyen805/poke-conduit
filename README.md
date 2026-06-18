@@ -20,10 +20,10 @@ through Poke's inbound API (async council verdicts, fired reminders).
 | Capability | Tools | Notes |
 |---|---|---|
 | **Queued-notes backlog** (flagship) | `add_note` · `list_backlog` · `complete_note` · `pin_note` | Durable to-read / to-do queue, 1-based refs, pinning. |
-| **Council** (multi-agent) | `ask_council` · `council_status` | Fans a hard question out to four persona agents (Builder · Skeptic · Operator · User-Advocate), then a synthesizer makes the call. `deliver=return` replies inline; `deliver=async` returns now and **pushes** the verdict when ready. |
+| **Council** (multi-agent) | `ask_council` · `council_status` | Fans a hard question out to six persona agents (Builder · Skeptic · Operator · User-Advocate · Strategist · Pragmatist), then a synthesizer makes the call. `deliver=return` replies inline; `deliver=async` returns now and **pushes** the verdict when ready. |
 | **Proactive reminders** | `set_reminder` · `list_reminders` | Minute-resolution scheduler fires due reminders and pushes them via Poke. One-shot or `daily`. |
 | **Availability / DND** | `get_status` · `set_status` | `active` / `dnd` / `deep_work`, optional note + `until`. |
-| **Recipes** | `list_recipes` · `install_recipe` | Saved named routines. |
+| **Recipes** | `list_recipes` · `install_recipe` · `run_recipe` | Saved routines. A recipe is a free-text prompt **and/or** an executable `steps` macro — a JSON array of `{ tool, args }` that `run_recipe` dispatches through the conduit's own tools in order (offline-testable, can't recurse into itself). |
 
 ## Architecture
 
@@ -54,8 +54,8 @@ No credentials required — it falls back to pg-mem + MockModel + a mock Poke cl
 
 ```bash
 npm install
-npm test          # 101 tests (unit + tool handlers + full MCP wire e2e)
-npm run demo      # narrated, self-asserting end-to-end walkthrough (19 checks)
+npm test          # 120 tests (unit + tool handlers + full MCP wire e2e)
+npm run demo      # narrated, self-asserting end-to-end walkthrough (21 checks)
 npm run serve     # local HTTP server: GET / · POST /mcp · GET /cron · GET /healthz
 ```
 
@@ -72,7 +72,7 @@ Drive the local server by hand:
 ```bash
 npm run serve &
 curl -s localhost:7411/mcp -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'   # 12
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'   # 13
 ```
 
 ## Deploy
@@ -92,11 +92,11 @@ src/
   durable/ step.ts (Step · LocalStep · fromInngestStep)
   poke/    index.ts (PokeClient · HttpPokeClient · MockPokeClient)
   agents/  personas · worker · council · orchestrator
-  tools/   backlog · reminders · status · recipes · council · index
+  tools/   backlog · reminders · status · recipes · recipe-runner · council · index
   mcp/     auth.ts · server.ts (JSON-RPC)
   http/    core.ts (Request→Response core) · ratelimit.ts (RateLimiter port)
   scheduler.ts · render.ts · serve.ts · demo.ts
-test/      store · model · step · council · scheduler · render · auth · tools · mcp · ratelimit
+test/      store · model · step · council · scheduler · render · auth · tools · recipe-runner · mcp · ratelimit
 docs/superpowers/  specs/ · plans/
 ```
 

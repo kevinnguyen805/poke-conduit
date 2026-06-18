@@ -35,6 +35,7 @@ function toRecipe(r: any): Recipe {
     name: r.name,
     prompt: r.prompt ?? "",
     integrations: r.integrations ?? "[]",
+    steps: r.steps ?? "[]",
     enabled: bool(r.enabled),
     created_at: r.created_at,
   };
@@ -141,23 +142,33 @@ export class SqlStore implements Store {
     return r.rows.map(toRecipe);
   }
 
+  async getRecipe(userId: string, name: string): Promise<Recipe | null> {
+    const r = await this.sql(
+      `SELECT * FROM pc_recipes WHERE user_id=$1 AND name=$2 ORDER BY created_at DESC LIMIT 1`,
+      [userId, name],
+    );
+    return r.rowCount ? toRecipe(r.rows[0]) : null;
+  }
+
   async installRecipe(rec: {
     user_id: string;
     name: string;
     prompt?: string;
     integrations?: string;
+    steps?: string;
     enabled?: boolean;
   }): Promise<Recipe> {
     const id = newId("rcp");
     const r = await this.sql(
-      `INSERT INTO pc_recipes (id, user_id, name, prompt, integrations, enabled, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO pc_recipes (id, user_id, name, prompt, integrations, steps, enabled, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [
         id,
         rec.user_id,
         rec.name,
         rec.prompt ?? "",
         rec.integrations ?? "[]",
+        rec.steps ?? "[]",
         rec.enabled ?? true,
         nowIso(),
       ],

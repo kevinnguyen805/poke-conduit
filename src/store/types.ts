@@ -28,6 +28,7 @@ export interface Recipe {
   name: string;
   prompt: string;
   integrations: string; // JSON text
+  steps: string; // JSON text: [{ tool, args }] — an ordered macro of conduit tool-calls
   enabled: boolean;
   created_at: string; // ISO
 }
@@ -78,11 +79,14 @@ export interface Store {
   pinBacklog(userId: string, id: string, pinned: boolean): Promise<BacklogItem | null>;
 
   listRecipes(userId: string): Promise<Recipe[]>;
+  /** Most-recently-installed recipe with this name, or null. */
+  getRecipe(userId: string, name: string): Promise<Recipe | null>;
   installRecipe(r: {
     user_id: string;
     name: string;
     prompt?: string;
     integrations?: string;
+    steps?: string;
     enabled?: boolean;
   }): Promise<Recipe>;
 

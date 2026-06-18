@@ -124,6 +124,81 @@ describe("recipe tools", () => {
 
     expect((await call("list_recipes", {})).text).toContain("morning digest");
   });
+
+  it("runs an executable steps macro and applies every side effect", async () => {
+    const { call, store, poke } = await setup();
+    const steps = JSON.stringify([
+      { tool: "set_status", args: { status: "deep_work", note: "focus" } },
+      { tool: "add_note", args: { text: "from recipe" } },
+    ]);
+    const inst = await call("install_recipe", { name: "kickoff", prompt: "also describe", steps });
+    expect(inst.text).toContain("2 steps"); // install confirms the macro length
+
+    const run = await call("run_recipe", { name: "kickoff" });
+    expect(run.text).toContain('Ran your "kickoff" routine');
+    expect(run.text).toContain("✓ set_status");
+    expect(run.text).toContain("✓ add_note");
+    expect(run.data).toMatchObject({ ran: 2, planned: 2, ok: true });
+
+    // Steps took precedence over the prompt → nothing was pushed to Poke.
+    expect(poke.pushes.length).toBe(0);
+    // Real side effects landed in the store.
+    expect((await store.getStatus("u_test")).status).toBe("deep_work");
+    const open = await store.listBacklog("u_test", "open");
+    expect(open.map((i) => i.text)).toContain("from recipe");
+  });
+
+  it("a prompt-only recipe pushes its instruction back through Poke", async () => {
+    const { call, poke } = await setup();
+    await call("install_recipe", { name: "brief", prompt: "summarize overnight" });
+
+    const run = await call("run_recipe", { name: "brief" });
+    expect(run.text).toContain('Running your "brief" routine');
+    expect(run.data).toMatchObject({ pushed: true });
+    expect(poke.pushes.length).toBe(1);
+    expect(poke.pushes[0]).toContain("summarize overnight");
+  });
+
+  it("refuses to save a recipe whose steps are invalid (nothing persisted)", async () => {
+    const { call } = await setup();
+
+    const badTool = await call("install_recipe", {
+      name: "bad",
+      steps: JSON.stringify([{ tool: "nope", args: {} }]),
+    });
+    expect(badTool.text).toContain("couldn't save");
+    expect(badTool.text).toContain('unknown tool "nope"');
+
+    const badJson = await call("install_recipe", { name: "badjson", steps: "not json at all" });
+    expect(badJson.text).toContain("couldn't save");
+
+    const badArgs = await call("install_recipe", {
+      name: "badargs",
+      steps: JSON.stringify([{ tool: "add_note", args: {} }]), // add_note needs text
+    });
+    expect(badArgs.text).toContain("couldn't save");
+
+    // None of the three were persisted.
+    expect((await call("list_recipes", {})).text).toBe("No recipes installed yet.");
+  });
+
+  it("reports a miss for running an unknown recipe", async () => {
+    const { call } = await setup();
+    const res = await call("run_recipe", { name: "ghost" });
+    expect(res.text).toContain("couldn't find");
+  });
+
+  it("won't run a disabled recipe", async () => {
+    const { call, store } = await setup();
+    await store.installRecipe({
+      user_id: "u_test",
+      name: "off-one",
+      steps: JSON.stringify([{ tool: "add_note", args: { text: "x" } }]),
+      enabled: false,
+    });
+    const res = await call("run_recipe", { name: "off-one" });
+    expect(res.text).toContain("turned off");
+  });
 });
 
 describe("council tools", () => {

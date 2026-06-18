@@ -50,7 +50,7 @@ curl https://<your-deployment>/healthz
 
 curl -s https://<your-deployment>/mcp -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'
-# 12
+# 13
 ```
 
 ## 4. The cron schedule (read this)

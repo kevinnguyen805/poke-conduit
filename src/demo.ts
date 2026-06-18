@@ -99,7 +99,7 @@ async function main(): Promise<void> {
   check("onboarding instructions are advertised", typeof init.result?.instructions === "string");
   const tools = (await rpc("tools/list")).result.tools as { name: string }[];
   say(`  tools exposed: ${tools.map((t) => t.name).join(", ")}`);
-  check("12 tools listed", tools.length === 12);
+  check("13 tools listed", tools.length === 13);
 
   // ---- backlog (flagship) ----
   scene("2 · Queued-notes backlog");
@@ -127,13 +127,18 @@ async function main(): Promise<void> {
   // ---- council (the wow) ----
   scene("3 · Council — multi-agent deliberation (deliver=return)");
   say('  user: "should we ship the MVP Friday or take another week to harden it?"');
-  if (live) say("  (convening Builder · Skeptic · Operator · User-Advocate, then synthesizing…)");
+  if (live) say("  (convening Builder · Skeptic · Operator · User-Advocate · Strategist · Pragmatist, then synthesizing…)");
   const verdict = await callTool("ask_council", {
     question: "Ship the MVP Friday, or take another week to harden it?",
   });
   user(verdict.text);
   check("synthesis names the question", verdict.text.includes("Ship the MVP Friday"));
-  check("the room shows all four panelists", ["The Builder", "The Skeptic", "The Operator", "The User Advocate"].every((n) => verdict.text.includes(n)));
+  check(
+    "the room shows all six panelists",
+    ["The Builder", "The Skeptic", "The Operator", "The User Advocate", "The Strategist", "The Pragmatist"].every(
+      (n) => verdict.text.includes(n),
+    ),
+  );
   const runId = verdict.data?.run_id as string;
   check("run id returned", typeof runId === "string" && runId.startsWith("run_"));
 
@@ -186,14 +191,30 @@ async function main(): Promise<void> {
   const st = await callTool("get_status", {});
   check("status now reflects deep work", st.data?.status === "deep_work");
 
-  // ---- recipes ----
-  scene("7 · Saved recipes");
+  // ---- recipes (prompt-only AND executable macros) ----
+  scene("7 · Saved recipes — including executable macros");
   user((await callTool("list_recipes", {})).text);
   say('\n  user: "save a recipe called \'morning brief\' that summarizes my overnight saves"');
   user((await callTool("install_recipe", { name: "morning brief", prompt: "Summarize everything I saved overnight." })).text);
+
+  say('\n  user: "make a \'focus\' recipe that flips me to deep work and queues the next task"');
+  const focusSteps = JSON.stringify([
+    { tool: "set_status", args: { status: "deep_work", note: "recipe-driven focus" } },
+    { tool: "add_note", args: { text: "ship the recipe-execution feature" } },
+  ]);
+  user((await callTool("install_recipe", { name: "focus", steps: focusSteps })).text);
+
   const recipes = await callTool("list_recipes", {});
   user(recipes.text);
-  check("the new recipe is listed", recipes.text.includes("morning brief"));
+  check("both recipes are listed", recipes.text.includes("morning brief") && recipes.text.includes("focus"));
+
+  say('\n  user: "run focus"');
+  const openBeforeRun = (await callTool("list_backlog", {})).data?.count as number;
+  const ran = await callTool("run_recipe", { name: "focus" });
+  user(ran.text);
+  check("the macro ran both steps successfully", ran.data?.ran === 2 && ran.data?.ok === true);
+  const openAfterRun = (await callTool("list_backlog", {})).data?.count as number;
+  check("the add_note step actually queued a task", openAfterRun === openBeforeRun + 1);
 
   // ---- tally ----
   scene("Result");
