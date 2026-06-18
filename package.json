@@ -1,0 +1,29 @@
+{
+  "name": "poke-conduit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The durable brain Poke consults: a multi-agent MCP backend (orchestrator + persistent worker-agents + council + durable backlog/triggers). Poke is the iMessage front-end terminal.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx src/demo.ts",
+    "serve": "tsx src/serve.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "inngest": "^3.27.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "@vercel/node": "^3.2.29",
+    "pg-mem": "^3.0.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
