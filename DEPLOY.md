@@ -51,20 +51,23 @@ curl -s https://<your-deployment>/mcp -H 'content-type: application/json' \
 
 ## 4. The cron schedule (read this)
 
-`vercel.json` requests an **every-minute** tick (`* * * * *`) because reminder accuracy depends on
-it. **Vercel Hobby allows only daily crons**; sub-daily schedules need **Vercel Pro**. Options:
+`vercel.json` ships a **daily** tick (`0 13 * * *` — 13:00 UTC) so it **deploys out of the box on
+Vercel Hobby**, which rejects any sub-daily cron (`Hobby accounts are limited to daily cron jobs`).
+The scheduler itself is minute-resolution — it fires every trigger whose `fire_at` has passed
+whenever it's ticked — so the cadence is purely a question of how often `/api/cron` gets hit. Two
+ways to get finer than daily:
 
-- **Pro:** deploy as-is — minute-resolution reminders work out of the box.
-- **Hobby:** the deploy may reject or down-throttle the schedule. Either accept daily granularity
-  (edit the schedule to e.g. `0 13 * * *`), **or** leave Vercel Cron off and drive the scheduler
-  externally — `/api/cron` is a plain endpoint any scheduler can hit:
+- **Vercel Pro:** change the schedule to `* * * * *` (every minute) and redeploy. Done.
+- **Hobby (or any plan):** leave the daily Vercel cron as a safety-net heartbeat and drive
+  `/api/cron` externally as often as you like — it's a plain endpoint any scheduler can hit:
 
   ```bash
   curl -s https://<your-deployment>/cron -H "Authorization: Bearer $CRON_SECRET"
   ```
 
   (e.g. cron-job.org, a GitHub Action on a schedule, or a Poke recipe). The tick is idempotent —
-  it only fires triggers whose `fire_at` has passed and flips them out of `pending`.
+  it only fires triggers whose `fire_at` has passed and flips them out of `pending` — so ticking
+  it more often never double-fires.
 
 ## 5. Point Poke at it
 

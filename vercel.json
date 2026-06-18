@@ -5,5 +5,5 @@
     { "source": "/cron", "destination": "/api/cron" },
     { "source": "/healthz", "destination": "/api/healthz" }
   ],
-  "crons": [{ "path": "/api/cron", "schedule": "* * * * *" }]
+  "crons": [{ "path": "/api/cron", "schedule": "0 13 * * *" }]
 }
