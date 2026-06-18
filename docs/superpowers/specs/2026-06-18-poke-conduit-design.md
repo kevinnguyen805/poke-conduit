@@ -7,6 +7,31 @@
 
 ---
 
+## Build addendum (2026-06-18, as-built)
+
+Two infrastructure decisions changed during the build to remove friction and make the whole
+product testable **and** deployable with no external durability account. They do not change any
+capability or the data model — only the machinery underneath.
+
+- **MCP SDK dropped → hand-rolled JSON-RPC.** The surface Poke actually speaks is tiny
+  (`initialize` / `ping` / `tools/list` / `tools/call` + `notifications/*`). Following the proven
+  `poke-amb-bridge`, the server is a hand-rolled Streamable-HTTP JSON-RPC handler. It is
+  edge-runtime-compatible (the Node-only `@modelcontextprotocol/sdk` is not), stateless, and fully
+  unit-testable over `Request`/`Response`. `@modelcontextprotocol/sdk` is **not** a dependency.
+- **Inngest dropped from the critical path.** The council is ~5 model calls — well under Vercel's
+  300 s function budget — so it runs **inline under `LocalStep`** (the exact code path tests and the
+  demo exercise). Idempotency is preserved by the `finishRun` compare-and-swap, and **Vercel Cron**
+  drives the scheduler (`/api/cron`). The `Step` seam and the `fromInngestStep` adapter remain as
+  the documented upgrade path if a run ever needs true multi-hour durability. Net effect: deployable
+  with just **Neon** — no Inngest Cloud account, and no untested durability path. `inngest` is
+  **not** a dependency.
+
+Wherever the text below says "Inngest in prod," read "inline under `LocalStep`, with Inngest as the
+documented upgrade." As-built runtime dependencies: `@anthropic-ai/sdk`, `@neondatabase/serverless`,
+`zod` (plus dev tooling: `@vercel/node`, `pg-mem`, `tsx`, `typescript`, `vitest`).
+
+---
+
 ## 1. Problem & product
 
 Real iMessage access is the hardest, riskiest part of any messaging agent (no official Apple

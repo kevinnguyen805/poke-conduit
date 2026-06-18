@@ -7,7 +7,13 @@
 
 **Architecture:** Poke calls a single MCP server over HTTP. Fast tools (backlog/status/recipes/reminders) run inline against Postgres. The council runs as durable steps (Inngest in prod, `LocalStep` in tests/demo) and pushes its synthesis back to the user through Poke's inbound API. A `Step` injection seam makes durability testable without the Inngest runtime; a single `SqlStore` runs on both `pg-mem` (tests) and Neon (prod).
 
-**Tech Stack:** TypeScript / Node 20 / ESM · `@modelcontextprotocol/sdk` · `@anthropic-ai/sdk` · `inngest` · `@neondatabase/serverless` + `pg-mem` · `@vercel/node` · `zod` · `vitest` + `tsx`.
+**Tech Stack:** TypeScript / Node 20 / ESM · `@anthropic-ai/sdk` · `@neondatabase/serverless` + `pg-mem` · `@vercel/node` · `zod` · `vitest` + `tsx`.
+
+> **As-built note (2026-06-18):** `@modelcontextprotocol/sdk` and `inngest` were dropped during the
+> build (see the spec's "Build addendum"). The MCP server is hand-rolled JSON-RPC (edge-compatible,
+> fully testable); the council runs inline under `LocalStep` within Vercel's 300 s budget, and the
+> scheduler is **Vercel Cron** — so `api/inngest.ts` became **`api/cron.ts`** and there is no
+> `inngest.json`. The `Step` seam + `fromInngestStep` adapter remain as the documented upgrade path.
 
 ---
 
