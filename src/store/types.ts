@@ -103,6 +103,8 @@ export interface Store {
   }): Promise<Trigger>;
   /** Pending triggers whose fire_at <= now (ISO). */
   dueTriggers(now: string): Promise<Trigger[]>;
+  /** A user's pending triggers, soonest first (for "what reminders do I have?"). */
+  listTriggers(userId: string): Promise<Trigger[]>;
   markTriggerFired(id: string, rearmTo?: string): Promise<void>;
 
   createRun(r: { id: string; user_id: string; kind: string; input: string }): Promise<Run>;

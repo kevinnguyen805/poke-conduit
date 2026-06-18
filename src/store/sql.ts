@@ -214,6 +214,14 @@ export class SqlStore implements Store {
     return r.rows.map(toTrigger);
   }
 
+  async listTriggers(userId: string): Promise<Trigger[]> {
+    const r = await this.sql(
+      `SELECT * FROM pc_triggers WHERE user_id=$1 AND status='pending' ORDER BY fire_at ASC`,
+      [userId],
+    );
+    return r.rows.map(toTrigger);
+  }
+
   async markTriggerFired(id: string, rearmTo?: string): Promise<void> {
     if (rearmTo) {
       await this.sql(`UPDATE pc_triggers SET status='pending', fire_at=$2 WHERE id=$1`, [
