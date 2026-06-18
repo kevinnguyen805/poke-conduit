@@ -51,6 +51,13 @@ export const TABLES: string[] = [
     created_at text NOT NULL,
     finished_at text
   )`,
+  // window_start is a fixed-window BUCKET INDEX (floor(epoch_s / window)),
+  // not an ISO timestamp — the one integer-time column, by design.
+  `CREATE TABLE IF NOT EXISTS pc_rate_limits (
+    key text PRIMARY KEY,
+    window_start bigint NOT NULL,
+    count integer NOT NULL DEFAULT 0
+  )`,
 ];
 
 export async function applySchema(sql: Sql): Promise<void> {

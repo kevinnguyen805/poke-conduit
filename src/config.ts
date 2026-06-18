@@ -22,6 +22,10 @@ export const config = {
   mcpAuthEnforce: process.env.MCP_AUTH_ENFORCE === "true",
   mcpBearerKey: process.env.MCP_BEARER_KEY ?? "",
 
+  /** Per-identity fixed-window rate limit on POST /mcp (basic public-endpoint hygiene). */
+  mcpRateMax: Number(process.env.MCP_RATE_MAX ?? 120),
+  mcpRateWindowSec: Number(process.env.MCP_RATE_WINDOW_SEC ?? 60),
+
   /** Local HTTP port for `npm run serve`. */
   port: Number(process.env.PORT ?? 7411),
 };

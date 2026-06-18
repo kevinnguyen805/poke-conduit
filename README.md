@@ -32,7 +32,10 @@ just Neon:
 
 - **Hand-rolled MCP** (`src/mcp/`, `src/http/core.ts`) — a Streamable-HTTP JSON-RPC handler over Web
   `Request`/`Response`. No SDK: the surface Poke speaks is tiny, and hand-rolling keeps it
-  edge-runtime-compatible and fully unit-testable. (Same choice the `poke-amb-bridge` made.)
+  edge-runtime-compatible and fully unit-testable. (Same choice the `poke-amb-bridge` made.) `POST
+  /mcp` is rate-limited per identity (Poke user id, else IP) via a `RateLimiter` port
+  (`src/http/ratelimit.ts`) — in-memory locally, Postgres-backed in prod; a static landing page is
+  served at `/`, and a browser `GET /mcp` returns friendly server info instead of a 500.
 - **`Store` port** (`src/store/`) — one `SqlStore` runs on **pg-mem** (tests / `serve` / demo) and
   **Neon** (prod) over an injected `Sql` driver. All timestamps are ISO text so they sort lexically
   and round-trip byte-identically between the two.
@@ -51,9 +54,9 @@ No credentials required — it falls back to pg-mem + MockModel + a mock Poke cl
 
 ```bash
 npm install
-npm test          # 92 tests (unit + tool handlers + full MCP wire e2e)
+npm test          # 101 tests (unit + tool handlers + full MCP wire e2e)
 npm run demo      # narrated, self-asserting end-to-end walkthrough (19 checks)
-npm run serve     # local HTTP server: POST /mcp · GET /cron · GET /healthz
+npm run serve     # local HTTP server: GET / · POST /mcp · GET /cron · GET /healthz
 ```
 
 The demo runs the **real wire path** (`handleMcp(Request) → Response`) and never sends a real
@@ -81,6 +84,7 @@ caveat, and how to point Poke at your `/mcp` endpoint.
 
 ```
 api/       mcp.ts · cron.ts · healthz.ts · _store.ts   (Vercel edge entry points)
+public/    index.html                                  (static landing page served at /)
 src/
   config.ts · ids.ts
   store/   types · schema · sql (SqlStore) · pgmem · pg (Neon) · index
@@ -90,9 +94,9 @@ src/
   agents/  personas · worker · council · orchestrator
   tools/   backlog · reminders · status · recipes · council · index
   mcp/     auth.ts · server.ts (JSON-RPC)
-  http/    core.ts (Request→Response core, shared by Vercel + serve)
+  http/    core.ts (Request→Response core) · ratelimit.ts (RateLimiter port)
   scheduler.ts · render.ts · serve.ts · demo.ts
-test/      store · model · step · council · scheduler · render · auth · tools · mcp
+test/      store · model · step · council · scheduler · render · auth · tools · mcp · ratelimit
 docs/superpowers/  specs/ · plans/
 ```
 

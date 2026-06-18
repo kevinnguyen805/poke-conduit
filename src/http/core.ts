@@ -8,6 +8,7 @@ import { makePokeClient, type PokeClient } from "../poke/index";
 import { runScheduler } from "../scheduler";
 import type { Store } from "../store/types";
 import type { ToolContext } from "../tools/types";
+import type { RateLimiter } from "./ratelimit";
 
 /**
  * Web-standard (Request → Response) core, reused verbatim by the Vercel
@@ -18,6 +19,8 @@ export interface CoreDeps {
   store: Store;
   model?: Model;
   poke?: PokeClient;
+  /** Throttle POST /mcp. Omit to disable (tests/demo that don't exercise it). */
+  rateLimiter?: RateLimiter;
   /** Run work after responding (async council). Defaults to fire-and-forget. */
   background?: ToolContext["background"];
   /** Override config.mcpAuthEnforce (tests/local). */
@@ -67,13 +70,60 @@ function rpcResponse(req: Request, payload: unknown): Response {
   });
 }
 
-/** The MCP endpoint: GET → server info, POST → JSON-RPC. */
-export async function handleMcp(req: Request, deps: CoreDeps): Promise<Response> {
+/** Client IP for rate-limit keying (Vercel sets x-forwarded-for at the edge). */
+function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0]?.trim() || "unknown";
+  return req.headers.get("x-real-ip") || "unknown";
+}
+
+/**
+ * The non-POST branches of the MCP endpoint, isolated so an edge entry point can
+ * answer a GET probe WITHOUT constructing a Store. In production a browser hit to
+ * /mcp has no database to reach — eagerly building the store there is exactly why
+ * a bare GET used to return 500. GET now yields friendly server info instead.
+ */
+export function mcpInfoResponse(req: Request): Response {
   if (req.method === "GET") {
     if (wantsSse(req)) return new Response("No server-initiated stream", { status: 405 });
-    return json({ ...SERVER_INFO, status: "ok" });
+    return json({
+      ...SERVER_INFO,
+      status: "ok",
+      transport: "Streamable HTTP — POST JSON-RPC 2.0 to this URL.",
+      docs: "/",
+    });
   }
-  if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+  return json({ error: "method not allowed" }, 405);
+}
+
+/** The MCP endpoint: GET → server info, POST → JSON-RPC. */
+export async function handleMcp(req: Request, deps: CoreDeps): Promise<Response> {
+  if (req.method !== "POST") return mcpInfoResponse(req);
+
+  // Auth is header-only — resolve it up front: it keys the rate limiter, then
+  // is handed to the dispatcher.
+  const auth = extractAuth((n) => req.headers.get(n));
+
+  // Fixed-window throttle BEFORE parsing the body, so a flood pays the cheapest
+  // possible price. Keyed per Poke user when one is injected, else per client IP.
+  if (deps.rateLimiter) {
+    const who = auth.hasUserId ? `u:${auth.userId}` : `ip:${clientIp(req)}`;
+    const { allowed } = await deps.rateLimiter.hit(
+      `mcp:${who}`,
+      config.mcpRateMax,
+      config.mcpRateWindowSec,
+    );
+    if (!allowed) {
+      return json(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32029, message: "Rate limit exceeded — slow down and retry shortly." },
+        },
+        429,
+      );
+    }
+  }
 
   let msg: any;
   try {
@@ -82,7 +132,6 @@ export async function handleMcp(req: Request, deps: CoreDeps): Promise<Response>
     return rpcResponse(req, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
   }
 
-  const auth = extractAuth((n) => req.headers.get(n));
   const rpcDeps: RpcDeps = { makeToolContext: makeToolContextFactory(deps) };
   if (deps.enforceAuth !== undefined) rpcDeps.enforceAuth = deps.enforceAuth;
 

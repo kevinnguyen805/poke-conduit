@@ -22,6 +22,8 @@ Set these in the Vercel project (Settings → Environment Variables), or via `ve
 | `POKE_INBOUND_URL` | no | Defaults to `https://poke.com/api/v1/inbound/api-message`. |
 | `MCP_AUTH_ENFORCE` | no | `true` to require auth on data tools. Default off (allow all — diagnostic-first). |
 | `MCP_BEARER_KEY` | if enforcing | The key matched against the inbound `Bearer` / `x-poke-key`. |
+| `MCP_RATE_MAX` | no | Max `POST /mcp` calls per identity per window. Default `120`. |
+| `MCP_RATE_WINDOW_SEC` | no | Rate-limit window in seconds. Default `60`. |
 | `CRON_SECRET` | recommended | If set, `/api/cron` requires `Authorization: Bearer <secret>`. Vercel sends this automatically for its own cron invocations. |
 | `POKE_CONDUIT_PERSONA_MODEL` | no | Council persona model. Default `claude-haiku-4-5-20251001`. |
 | `POKE_CONDUIT_SYNTH_MODEL` | no | Synthesis model. Default `claude-fable-5`. |
@@ -36,7 +38,9 @@ vercel --prod          # deploy
 ```
 
 The edge functions in `api/` are auto-detected. `vercel.json` maps clean paths
-(`/mcp`, `/cron`, `/healthz`) to them and registers the cron job.
+(`/mcp`, `/cron`, `/healthz`) to them and registers the cron job. The root path `/` serves a
+static landing page (`public/index.html`) describing the server; a browser `GET /mcp` returns
+friendly server info (not a 500) instead of requiring a JSON-RPC POST.
 
 ### Verify
 

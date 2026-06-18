@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { handleMcp, type CoreDeps } from "../src/http/core";
+import { config } from "../src/config";
+import { handleMcp, mcpInfoResponse, type CoreDeps } from "../src/http/core";
+import type { RateLimiter } from "../src/http/ratelimit";
 import { MockModel } from "../src/model/mock";
 import { MockPokeClient } from "../src/poke/index";
 import { makePgMemStore } from "../src/store/pgmem";
@@ -32,11 +34,23 @@ const rpc = (method: string, params?: unknown, id: unknown = 1) => ({
 });
 
 describe("handleMcp — lifecycle", () => {
-  it("GET returns server info", async () => {
+  it("GET returns server info with a transport hint and docs pointer", async () => {
     const res = await handleMcp(new Request("http://localhost/mcp", { method: "GET" }), await deps());
     const body = await readJson(res);
     expect(body.name).toBe("poke-conduit");
     expect(body.status).toBe("ok");
+    expect(body.transport).toContain("POST");
+    expect(body.docs).toBe("/");
+  });
+
+  it("mcpInfoResponse answers a GET without a Store (prod GET probe → no 500) and 405s other non-POST", async () => {
+    // No deps/store passed — the whole point of the helper: a bare GET in prod
+    // (no DATABASE_URL) must not construct a store.
+    const get = mcpInfoResponse(new Request("http://localhost/mcp", { method: "GET" }));
+    expect(get.status).toBe(200);
+    expect((await readJson(get)).status).toBe("ok");
+    const put = mcpInfoResponse(new Request("http://localhost/mcp", { method: "PUT" }));
+    expect(put.status).toBe(405);
   });
 
   it("initialize advertises serverInfo and onboarding instructions", async () => {
@@ -155,5 +169,55 @@ describe("handleMcp — transport", () => {
   it("returns -32601 for an unknown method", async () => {
     const body = await readJson(await handleMcp(post(rpc("does/not/exist")), await deps()));
     expect(body.error.code).toBe(-32601);
+  });
+});
+
+describe("handleMcp — rate limit", () => {
+  /** A limiter we fully control: allow the first `cap` hits, then block. */
+  function cappedLimiter(cap: number, seen?: Array<{ key: string; max: number; windowSec: number }>): RateLimiter {
+    let n = 0;
+    return {
+      async hit(key, max, windowSec) {
+        seen?.push({ key, max, windowSec });
+        n += 1;
+        return { allowed: n <= cap, count: n };
+      },
+    };
+  }
+
+  it("returns 429 with a JSON-RPC error once the limiter blocks", async () => {
+    const d = await deps({ rateLimiter: cappedLimiter(2) });
+    expect((await handleMcp(post(rpc("ping")), d)).status).toBe(200);
+    expect((await handleMcp(post(rpc("ping")), d)).status).toBe(200);
+    const blocked = await handleMcp(post(rpc("ping")), d);
+    expect(blocked.status).toBe(429);
+    const body = await readJson(blocked);
+    expect(body.jsonrpc).toBe("2.0");
+    expect(body.error.code).toBe(-32029);
+    expect(body.error.message).toContain("Rate limit");
+  });
+
+  it("keys by Poke user id when present, else first-hop client IP, with configured limits", async () => {
+    const seen: Array<{ key: string; max: number; windowSec: number }> = [];
+    const d = await deps({ rateLimiter: cappedLimiter(99, seen) });
+    await handleMcp(post(rpc("ping"), { "x-poke-user-id": "u_42" }), d);
+    await handleMcp(post(rpc("ping"), { "x-forwarded-for": "9.9.9.9, 1.1.1.1" }), d);
+    expect(seen[0]?.key).toBe("mcp:u:u_42");
+    expect(seen[1]?.key).toBe("mcp:ip:9.9.9.9");
+    expect(seen[0]?.max).toBe(config.mcpRateMax);
+    expect(seen[0]?.windowSec).toBe(config.mcpRateWindowSec);
+  });
+
+  it("does not rate-limit GET (server info needs no throttle)", async () => {
+    let hits = 0;
+    const rateLimiter: RateLimiter = {
+      async hit() {
+        hits += 1;
+        return { allowed: false, count: 1 };
+      },
+    };
+    const res = await handleMcp(new Request("http://localhost/mcp", { method: "GET" }), await deps({ rateLimiter }));
+    expect(res.status).toBe(200); // not 429
+    expect(hits).toBe(0); // limiter never consulted for GET
   });
 });

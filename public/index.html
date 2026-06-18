@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>poke-conduit — the durable brain Poke consults</title>
+<meta name="description" content="A production-shaped, multi-agent MCP server that Poke calls as a client. 12 tools across 4 capabilities: backlog, multi-agent council, reminders, status & recipes." />
+<meta property="og:title" content="poke-conduit" />
+<meta property="og:description" content="The durable brain Poke consults — a multi-agent MCP server Poke calls as a client." />
+<meta property="og:type" content="website" />
+<style>
+  :root{
+    --bg:#fbfbfb; --ink:#181b23; --paper:#ffffff; --line:#e7e7ea; --muted:#8a8f9a;
+    --cobalt:#0a3bd6; --cobalt:oklch(50.58% 0.2886 264.84);
+    --soft:rgba(10,59,214,.07);
+    --serif:"New York",ui-serif,Georgia,"Times New Roman",serif;
+    --mono:"Departure Mono",ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--serif); font-size:17px; line-height:1.72;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:64px 24px 96px}
+  a{color:var(--cobalt); text-underline-offset:2px; text-decoration-thickness:1px}
+  a:hover{text-decoration:none}
+  code,.mono{font-family:var(--mono)}
+
+  /* header */
+  .brand{font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--ink); display:flex; align-items:center; gap:8px}
+  .brand .bar{color:var(--cobalt)}
+  h1{font-size:34px; line-height:1.18; font-weight:600; margin:20px 0 10px; letter-spacing:-.01em}
+  .lede{font-size:18px; color:#3a3f4a; margin:0 0 22px}
+  .chips{font-family:var(--mono); font-size:12px; color:var(--muted); letter-spacing:.02em; padding-bottom:26px; border-bottom:2px solid var(--cobalt)}
+  .chips b{color:var(--ink); font-weight:500}
+
+  /* sections */
+  section{padding-top:40px}
+  .kicker{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--cobalt); margin-bottom:10px}
+  h2{font-size:20px; font-weight:600; margin:0 0 12px; letter-spacing:-.005em}
+  p{margin:0 0 14px}
+  .muted{color:var(--muted)}
+
+  /* code / diagram cards */
+  pre{
+    font-family:var(--mono); font-size:12.5px; line-height:1.65; color:var(--ink);
+    background:var(--paper); border:1px solid var(--line); border-radius:8px;
+    padding:16px 18px; overflow-x:auto; margin:0 0 14px;
+  }
+  pre.diagram{background:var(--soft); border-color:transparent; font-size:12px}
+
+  /* capabilities */
+  .cap{padding:14px 0; border-top:1px solid var(--line)}
+  .cap:first-of-type{border-top:none}
+  .cap h3{font-size:16px; font-weight:600; margin:0 0 4px}
+  .cap .tools{font-family:var(--mono); font-size:12px; color:var(--cobalt); margin-bottom:5px; word-spacing:.05em}
+  .cap .desc{color:#3a3f4a; font-size:15.5px; margin:0}
+
+  /* seams list */
+  ul.seams{list-style:none; padding:0; margin:0}
+  ul.seams li{padding:9px 0 9px 18px; border-top:1px solid var(--line); position:relative; font-size:15.5px; color:#3a3f4a}
+  ul.seams li:first-child{border-top:none}
+  ul.seams li::before{content:"▸"; color:var(--cobalt); position:absolute; left:0; top:9px; font-size:12px}
+  ul.seams b{color:var(--ink); font-weight:600}
+
+  /* footer */
+  footer{margin-top:52px; padding-top:22px; border-top:2px solid var(--cobalt); font-size:14px; color:var(--muted)}
+  footer .row{font-family:var(--mono); font-size:12px; letter-spacing:.02em; margin-bottom:12px}
+  footer .row a{margin-right:18px}
+  .note{font-size:13.5px; line-height:1.6}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="brand"><span class="bar">▮</span> poke-conduit</div>
+  <h1>The durable brain Poke consults.</h1>
+  <p class="lede">A production-shaped, multi-agent <strong>MCP server</strong> that Poke calls as a client — the inversion that turns an iMessage front-end into a durable agent backend.</p>
+  <div class="chips"><b>live</b> · <b>12</b> tools · <b>4</b> capabilities · <b>101</b> tests · <b>3</b> deps · edge runtime</div>
+
+  <section>
+    <div class="kicker">01 — What it is</div>
+    <h2>Poke is the client. This is the server.</h2>
+    <p>Poke lives in iMessage (sanctioned, no Apple API, no ban risk) and is an <strong>MCP client</strong> that calls external MCP servers. poke-conduit is the server it calls. You text Poke; Poke calls a tool here; conduit does durable work — and can <strong>text you back later</strong> through Poke's inbound API when an async verdict lands or a reminder fires.</p>
+    <pre class="diagram">  iMessage ──▶ Poke (MCP client) ──▶ poke-conduit /mcp ──▶ Postgres (Neon)
+                   ▲                        │  orchestrator · worker-agents
+                   └────── proactive push ──┘  council · backlog · scheduler
+                          (Poke inbound API)</pre>
+  </section>
+
+  <section>
+    <div class="kicker">02 — What it does</div>
+    <h2>12 tools across four capabilities.</h2>
+
+    <div class="cap">
+      <h3>Queued-notes backlog <span class="muted" style="font-weight:400">— flagship</span></h3>
+      <div class="tools">add_note · list_backlog · complete_note · pin_note</div>
+      <p class="desc">A durable to-read / to-do queue with 1-based references and pinning.</p>
+    </div>
+
+    <div class="cap">
+      <h3>Council — multi-agent</h3>
+      <div class="tools">ask_council · council_status</div>
+      <p class="desc">Fans a hard question out to four persona agents — Builder, Skeptic, Operator, User-Advocate — then a synthesizer makes the call. Reply inline, or return now and <strong>push</strong> the verdict when it's ready.</p>
+    </div>
+
+    <div class="cap">
+      <h3>Proactive reminders</h3>
+      <div class="tools">set_reminder · list_reminders</div>
+      <p class="desc">A minute-resolution scheduler fires due reminders and pushes them through Poke. One-shot or daily.</p>
+    </div>
+
+    <div class="cap">
+      <h3>Status &amp; recipes</h3>
+      <div class="tools">get_status · set_status · list_recipes · install_recipe</div>
+      <p class="desc">Availability / DND (active · dnd · deep_work) and saved named routines.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">03 — Architecture</div>
+    <h2>A few small, testable seams.</h2>
+    <ul class="seams">
+      <li><b>Hand-rolled MCP</b> — a Streamable-HTTP JSON-RPC handler over Web <code>Request</code>/<code>Response</code>. No SDK: the surface Poke speaks is tiny, and hand-rolling keeps it edge-compatible and fully unit-testable.</li>
+      <li><b>Store port</b> — one <code>SqlStore</code> runs on pg-mem (tests · serve · demo) and Neon (prod) over an injected driver. Timestamps are ISO text, so they sort lexically and round-trip byte-identically.</li>
+      <li><b>Model port</b> — real Claude when <code>ANTHROPIC_API_KEY</code> is set, else a deterministic mock, so tests and the demo need zero credentials.</li>
+      <li><b>Step seam</b> — council logic is written once against <code>Step</code>; runs in-process today, with a documented adapter for true multi-hour durability.</li>
+      <li><b>Two credentials, two directions</b> — inbound (Poke → conduit) is distinct from outbound (conduit → Poke's inbound API, which makes Poke act on the message).</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="kicker">04 — How Poke connects</div>
+    <h2>Point a Poke MCP integration at <code>/mcp</code>.</h2>
+    <p>Poke presents its API key as a <code>Bearer</code> token and auto-injects <code>x-poke-user-id</code> — so per-user scoping comes for free. Data tools are gated by <code>MCP_AUTH_ENFORCE</code>; the endpoint is rate-limited per identity. Proactive pushes go back out through Poke's inbound API.</p>
+  </section>
+
+  <section>
+    <div class="kicker">05 — Run it locally</div>
+    <h2>Zero credentials required.</h2>
+    <p class="muted" style="margin-bottom:12px">Falls back to pg-mem + a mock model + a mock Poke client.</p>
+    <pre>npm install
+npm test       # 101 tests — unit, tool handlers, full MCP wire e2e
+npm run demo   # narrated, self-asserting walkthrough (19 checks)
+npm run serve  # local HTTP: GET / · POST /mcp · GET /cron · GET /healthz</pre>
+  </section>
+
+  <footer>
+    <div class="row">
+      <a href="https://github.com/kevinnguyen805/poke-conduit">source ↗</a>
+      <a href="/healthz">/healthz</a>
+      <span>/mcp — POST JSON-RPC</span>
+    </div>
+    <p class="note">Inert by default: this reference deployment ships with no secrets wired, so <code>/mcp</code> needs a database before it does real work. A backend built to be read as much as run — sibling to <a href="https://github.com/kevinnguyen805/poke-amb-bridge">poke-amb-bridge</a>.</p>
+  </footer>
+
+</main>
+</body>
+</html>
