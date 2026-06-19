@@ -18,7 +18,9 @@ export const config = {
   pokeInboundUrl:
     process.env.POKE_INBOUND_URL ?? "https://poke.com/api/v1/inbound/api-message",
 
-  /** Spectrum Cloud creds (app.photon.codes → project Settings). Empty → terminal/offline only. */
+  /** Spectrum Cloud creds (app.photon.codes → project Settings). Required by BOTH providers:
+   *  Spectrum() authenticates the project against Cloud at boot regardless of provider
+   *  (empty → ZodError; fake → 422). There is no credential-free mode. See docs/SPECTRUM.md. */
   spectrumProjectId: process.env.SPECTRUM_PROJECT_ID ?? "",
   spectrumProjectSecret: process.env.SPECTRUM_PROJECT_SECRET ?? "",
 
