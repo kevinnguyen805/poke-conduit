@@ -9,7 +9,7 @@ import { makePgMemStore } from "../src/store/pgmem";
 import type { Store } from "../src/store/types";
 
 const PERSONA_MODEL = "claude-haiku-4-5-20251001";
-const SYNTH_MODEL = "claude-fable-5";
+const SYNTH_MODEL = "claude-opus-4-8";
 const Q = "Should we ship the council sync or async?";
 
 const input = () => ({ question: Q, personaModel: PERSONA_MODEL, synthModel: SYNTH_MODEL });

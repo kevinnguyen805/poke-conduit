@@ -8,7 +8,7 @@ export const config = {
   /** Cheap/fast model for the persona worker-agents. */
   personaModel: process.env.POKE_CONDUIT_PERSONA_MODEL ?? "claude-haiku-4-5-20251001",
   /** Strong model for the synthesis step. */
-  synthModel: process.env.POKE_CONDUIT_SYNTH_MODEL ?? "claude-fable-5",
+  synthModel: process.env.POKE_CONDUIT_SYNTH_MODEL ?? "claude-opus-4-8",
 
   /** Neon Postgres connection string. Empty → local pg-mem store. */
   databaseUrl: process.env.DATABASE_URL ?? "",

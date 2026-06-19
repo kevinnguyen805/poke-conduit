@@ -28,7 +28,7 @@ Set these in the Vercel project (Settings → Environment Variables), or via `ve
 | `INNGEST_EVENT_KEY` | for durable async | Set (and `npm install inngest`) → async council runs on Inngest for true serverless durability. Empty → in-process inline fallback. See §6. |
 | `INNGEST_SIGNING_KEY` | with Inngest | Inngest signing key; the `/inngest` serve endpoint uses it to verify callbacks from Inngest. |
 | `POKE_CONDUIT_PERSONA_MODEL` | no | Council persona model. Default `claude-haiku-4-5-20251001`. |
-| `POKE_CONDUIT_SYNTH_MODEL` | no | Synthesis model. Default `claude-fable-5`. |
+| `POKE_CONDUIT_SYNTH_MODEL` | no | Synthesis model. Default `claude-opus-4-8`. |
 
 ## 3. Deploy
 
