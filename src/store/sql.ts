@@ -316,6 +316,11 @@ export class SqlStore implements Store {
   }
 
   async recentSpectrumTurns(userId: string, limit: number): Promise<SpectrumTurn[]> {
+    // Tiebreak `at` (ms-granular ISO) by id. A same-ms user+assistant pair is
+    // reachable only on the synchronous MockRouterModel path — the real router's
+    // network round-trip spaces appends well apart — and there a flipped order is
+    // harmless (mock routing keys off the latest message, not history order).
+    // A monotonic turn key would be the Phase-B fix if sub-ms ordering ever matters.
     const r = await this.sql(
       `SELECT role, text FROM pc_spectrum_turn WHERE user_id=$1 ORDER BY at DESC, id DESC LIMIT $2`,
       [userId, limit],
