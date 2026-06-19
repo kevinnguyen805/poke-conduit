@@ -6,6 +6,8 @@ import type {
   Recipe,
   Recurrence,
   Run,
+  SpectrumSpace,
+  SpectrumTurn,
   Sql,
   Status,
   StatusKind,
@@ -71,6 +73,13 @@ function toRun(r: any): Run {
     output: r.output ?? "{}",
     created_at: r.created_at,
     finished_at: r.finished_at ?? null,
+  };
+}
+function toSpectrumSpace(r: any): SpectrumSpace {
+  return {
+    user_id: r.user_id,
+    space_id: r.space_id,
+    last_seen: r.last_seen,
   };
 }
 
@@ -273,5 +282,44 @@ export class SqlStore implements Store {
   async getRun(userId: string, id: string): Promise<Run | null> {
     const r = await this.sql(`SELECT * FROM pc_runs WHERE id=$1 AND user_id=$2`, [id, userId]);
     return r.rowCount ? toRun(r.rows[0]) : null;
+  }
+
+  // ---- spectrum ----
+  async upsertSpectrumSpace(s: { user_id: string; space_id: string }): Promise<void> {
+    await this.sql(
+      `INSERT INTO pc_spectrum_space (user_id, space_id, last_seen)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (user_id) DO UPDATE SET
+         space_id=EXCLUDED.space_id, last_seen=EXCLUDED.last_seen`,
+      [s.user_id, s.space_id, nowIso()],
+    );
+  }
+
+  async getSpectrumSpace(userId: string): Promise<SpectrumSpace | null> {
+    const r = await this.sql(`SELECT * FROM pc_spectrum_space WHERE user_id=$1`, [userId]);
+    if (!r.rowCount) return null;
+    return toSpectrumSpace(r.rows[0]);
+  }
+
+  async appendSpectrumTurn(t: {
+    user_id: string;
+    space_id: string;
+    role: "user" | "assistant";
+    text: string;
+    at?: string;
+  }): Promise<void> {
+    await this.sql(
+      `INSERT INTO pc_spectrum_turn (id, user_id, space_id, role, text, at)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [newId("turn"), t.user_id, t.space_id, t.role, t.text, t.at ?? nowIso()],
+    );
+  }
+
+  async recentSpectrumTurns(userId: string, limit: number): Promise<SpectrumTurn[]> {
+    const r = await this.sql(
+      `SELECT role, text FROM pc_spectrum_turn WHERE user_id=$1 ORDER BY at DESC, id DESC LIMIT $2`,
+      [userId, limit],
+    );
+    return r.rows.map((x) => ({ role: x.role as "user" | "assistant", text: x.text })).reverse();
   }
 }

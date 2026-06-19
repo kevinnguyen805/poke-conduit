@@ -59,6 +59,19 @@ export const TABLES: string[] = [
     window_start bigint NOT NULL,
     count integer NOT NULL DEFAULT 0
   )`,
+  `CREATE TABLE IF NOT EXISTS pc_spectrum_space (
+    user_id text PRIMARY KEY,
+    space_id text NOT NULL,
+    last_seen text NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS pc_spectrum_turn (
+    id text PRIMARY KEY,
+    user_id text NOT NULL,
+    space_id text NOT NULL,
+    role text NOT NULL,
+    text text NOT NULL,
+    at text NOT NULL
+  )`,
 ];
 
 /**

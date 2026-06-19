@@ -66,6 +66,17 @@ export interface Run {
   finished_at: string | null; // ISO
 }
 
+export interface SpectrumSpace {
+  user_id: string;
+  space_id: string;
+  last_seen: string; // ISO
+}
+
+export interface SpectrumTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
 export type BacklogFilter = "open" | "pinned" | "done" | "all";
 
 export interface Store {
@@ -116,4 +127,18 @@ export interface Store {
   finishRun(id: string, output: string): Promise<boolean>;
   errorRun(id: string, output: string): Promise<void>;
   getRun(userId: string, id: string): Promise<Run | null>;
+
+  /** Map a user to their current Spectrum chat GUID (latest wins). */
+  upsertSpectrumSpace(s: { user_id: string; space_id: string }): Promise<void>;
+  getSpectrumSpace(userId: string): Promise<SpectrumSpace | null>;
+  /** Append one conversation turn (memory). `at` defaults to now; tests may pass it for deterministic order. */
+  appendSpectrumTurn(t: {
+    user_id: string;
+    space_id: string;
+    role: "user" | "assistant";
+    text: string;
+    at?: string;
+  }): Promise<void>;
+  /** Most-recent `limit` turns for a user, chronological (oldest→newest). */
+  recentSpectrumTurns(userId: string, limit: number): Promise<SpectrumTurn[]>;
 }
