@@ -18,6 +18,10 @@ export const config = {
   pokeInboundUrl:
     process.env.POKE_INBOUND_URL ?? "https://poke.com/api/v1/inbound/api-message",
 
+  /** Spectrum Cloud creds (app.photon.codes → project Settings). Empty → terminal/offline only. */
+  spectrumProjectId: process.env.SPECTRUM_PROJECT_ID ?? "",
+  spectrumProjectSecret: process.env.SPECTRUM_PROJECT_SECRET ?? "",
+
   /** INBOUND MCP auth (Poke → conduit). When true, require Bearer/x-poke-key. */
   mcpAuthEnforce: process.env.MCP_AUTH_ENFORCE === "true",
   mcpBearerKey: process.env.MCP_BEARER_KEY ?? "",
