@@ -99,6 +99,31 @@ export function mcpInfoResponse(req: Request): Response {
   return json({ error: "method not allowed" }, 405);
 }
 
+/**
+ * POST /mcp on an inert deployment (no DATABASE_URL). Returns a deliberate,
+ * self-describing 503 — JSON-RPC-shaped so an MCP client still gets a clean
+ * error object, while a human `curl` sees an honest HTTP status — instead of
+ * letting the store boot reject into a raw platform 500. Like mcpInfoResponse,
+ * this lets an edge entry point answer WITHOUT constructing a Store. (-32002 is
+ * the JSON-RPC "server not initialized" convention, which is exactly this case.)
+ */
+export function mcpInertResponse(): Response {
+  return json(
+    {
+      jsonrpc: "2.0",
+      id: null,
+      error: {
+        code: -32002,
+        message:
+          "poke-conduit is deployed inert: no DATABASE_URL is set, so it can't do real work yet. " +
+          "Run it locally with zero credentials (npm install && npm run demo), or set DATABASE_URL to enable it. " +
+          "Source + docs: https://github.com/kevinnguyen805/poke-conduit",
+      },
+    },
+    503,
+  );
+}
+
 /** The MCP endpoint: GET → server info, POST → JSON-RPC. */
 export async function handleMcp(req: Request, deps: CoreDeps): Promise<Response> {
   if (req.method !== "POST") return mcpInfoResponse(req);

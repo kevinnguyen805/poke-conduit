@@ -58,7 +58,7 @@ No credentials required — it falls back to pg-mem + MockModel + a mock Poke cl
 
 ```bash
 npm install
-npm test          # 128 tests (unit + tool handlers + full MCP wire e2e)
+npm test          # 129 tests (unit + tool handlers + full MCP wire e2e)
 npm run demo      # narrated, self-asserting end-to-end walkthrough (22 checks)
 npm run serve     # local HTTP server: GET / · POST /mcp · GET /cron · GET /healthz
 ```

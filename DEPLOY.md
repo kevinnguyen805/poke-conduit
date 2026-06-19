@@ -42,7 +42,10 @@ vercel --prod          # deploy
 The edge functions in `api/` are auto-detected. `vercel.json` maps clean paths
 (`/mcp`, `/cron`, `/healthz`) to them and registers the cron job. The root path `/` serves a
 static landing page (`public/index.html`) describing the server; a browser `GET /mcp` returns
-friendly server info (not a 500) instead of requiring a JSON-RPC POST.
+friendly server info (not a 500) instead of requiring a JSON-RPC POST. Before `DATABASE_URL` is
+set the deployment is **inert**: `POST /mcp` answers with a deliberate `503` + JSON-RPC `-32002`
+("deployed inert — set DATABASE_URL") rather than a raw `FUNCTION_INVOCATION_FAILED`, so every
+surface responds intentionally even with nothing wired.
 
 ### Verify
 

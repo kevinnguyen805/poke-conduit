@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { config } from "../src/config";
-import { handleMcp, mcpInfoResponse, type CoreDeps } from "../src/http/core";
+import { handleMcp, mcpInertResponse, mcpInfoResponse, type CoreDeps } from "../src/http/core";
 import type { RateLimiter } from "../src/http/ratelimit";
 import { MockModel } from "../src/model/mock";
 import { MockPokeClient } from "../src/poke/index";
@@ -51,6 +51,20 @@ describe("handleMcp — lifecycle", () => {
     expect((await readJson(get)).status).toBe("ok");
     const put = mcpInfoResponse(new Request("http://localhost/mcp", { method: "PUT" }));
     expect(put.status).toBe(405);
+  });
+
+  it("mcpInertResponse answers POST without a Store (inert prod → 503 JSON-RPC, not a raw 500)", async () => {
+    // The POST counterpart to mcpInfoResponse: when no DATABASE_URL is set the
+    // edge entry point returns this instead of letting the store boot reject
+    // into FUNCTION_INVOCATION_FAILED — a deliberate, self-describing reply.
+    const res = mcpInertResponse();
+    expect(res.status).toBe(503);
+    const body = await readJson(res);
+    expect(body.jsonrpc).toBe("2.0");
+    expect(body.id).toBe(null);
+    expect(body.error.code).toBe(-32002);
+    expect(body.error.message).toContain("DATABASE_URL");
+    expect(body.error.message).toContain("github.com/kevinnguyen805/poke-conduit");
   });
 
   it("initialize advertises serverInfo and onboarding instructions", async () => {

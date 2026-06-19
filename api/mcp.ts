@@ -1,5 +1,6 @@
+import { config as appConfig } from "../src/config";
 import { dispatchCouncilViaInngest } from "../src/durable/inngest";
-import { handleMcp, mcpInfoResponse } from "../src/http/core";
+import { handleMcp, mcpInertResponse, mcpInfoResponse } from "../src/http/core";
 import { getRateLimiter, getStore } from "./_store";
 
 // The MCP endpoint Poke calls. Plain Streamable-HTTP JSON-RPC as an edge Web
@@ -12,6 +13,10 @@ export default async function handler(req: Request): Promise<Response> {
   // answered with server info WITHOUT touching the store, so it can't 500 when
   // no DATABASE_URL is set.
   if (req.method !== "POST") return mcpInfoResponse(req);
+  // Inert deployment (no DATABASE_URL): answer POST with a deliberate 503
+  // instead of letting boot() reject into a raw platform 500. Mirrors the GET
+  // path above, which also short-circuits before touching the store.
+  if (!appConfig.databaseUrl) return mcpInertResponse();
   const [store, rateLimiter] = await Promise.all([getStore(), getRateLimiter()]);
   // Inngest is wired unconditionally; `dispatchCouncilViaInngest` returns false
   // (no import) until INNGEST_EVENT_KEY is set, so this stays inert by default
