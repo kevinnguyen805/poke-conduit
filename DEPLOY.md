@@ -25,6 +25,8 @@ Set these in the Vercel project (Settings → Environment Variables), or via `ve
 | `MCP_RATE_MAX` | no | Max `POST /mcp` calls per identity per window. Default `120`. |
 | `MCP_RATE_WINDOW_SEC` | no | Rate-limit window in seconds. Default `60`. |
 | `CRON_SECRET` | recommended | If set, `/api/cron` requires `Authorization: Bearer <secret>`. Vercel sends this automatically for its own cron invocations. |
+| `INNGEST_EVENT_KEY` | for durable async | Set (and `npm install inngest`) → async council runs on Inngest for true serverless durability. Empty → in-process inline fallback. See §6. |
+| `INNGEST_SIGNING_KEY` | with Inngest | Inngest signing key; the `/inngest` serve endpoint uses it to verify callbacks from Inngest. |
 | `POKE_CONDUIT_PERSONA_MODEL` | no | Council persona model. Default `claude-haiku-4-5-20251001`. |
 | `POKE_CONDUIT_SYNTH_MODEL` | no | Synthesis model. Default `claude-fable-5`. |
 
@@ -92,11 +94,35 @@ and a "don't auto-act" guardrail). Then just text Poke naturally: *"save this to
 *"what's on my list?"*, *"convene the council on X and get back to me"*, *"remind me to … tomorrow
 at 9"*, *"I'm in deep work until 5"*.
 
+## 6. Durable async council (optional — Inngest)
+
+By default, `deliver=async` council runs execute in-process right after the tool responds. In a
+long-lived server that always finishes; on serverless the platform can freeze the function before the
+push lands, so it's best-effort. Wiring **Inngest** makes async runs fully durable — each step
+(`create-run`, every persona, `synth`, `deliver`) is checkpointed and retried independently, so the
+work survives function freezes.
+
+It's strictly optional and off by default — `inngest` is **not** one of the three runtime
+dependencies. To turn it on:
+
+```bash
+npm install inngest                            # add the package (only needed once enabled)
+vercel env add INNGEST_EVENT_KEY production     # from your Inngest dashboard
+vercel env add INNGEST_SIGNING_KEY production
+vercel --prod
+```
+
+Then point your Inngest app at the deployed `/inngest` endpoint. With the key set, `POST /mcp` hands
+each async council to Inngest (`dispatchAsyncCouncil`); with it unset, `/inngest` returns 404 and the
+council uses the inline fallback. The tool contract is identical either way — only the durability
+guarantee changes. The whole integration lives in `src/durable/inngest.ts` (loaded lazily via a
+non-literal import) and `api/inngest.ts`; nothing in the core imports it.
+
 ## Notes
 
 - **Async council** (`deliver=async`) backgrounds the work after responding. In a long-lived process
-  (`npm run serve`) it always completes; on serverless it is best-effort unless the run is moved onto
-  Inngest via the `fromInngestStep` adapter. `deliver=return` (the default) is always reliable and is
-  what the tests and demo exercise.
+  (`npm run serve`) it always completes; on serverless it is best-effort *unless* Inngest is wired
+  (§6), in which case the run is fully durable. `deliver=return` (the default) is always reliable and
+  is what the tests and demo exercise.
 - **Runtime:** edge Web handlers (the Neon serverless driver is HTTP-based and needs no persistent
   connection). pg-mem is a dev dependency only and never enters the production bundle.

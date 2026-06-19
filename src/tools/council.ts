@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { runCouncilJob } from "../agents/orchestrator";
+import { runAndDeliverCouncil, runCouncilJob } from "../agents/orchestrator";
 import { newId } from "../ids";
 import { renderCouncil, renderCouncilQueued, renderRunStatus } from "../render";
-import type { ToolDef } from "./types";
+import type { AsyncCouncilJob, ToolDef } from "./types";
 
 const askCouncil: ToolDef = {
   name: "ask_council",
@@ -36,23 +36,25 @@ const askCouncil: ToolDef = {
         kind: "council",
         input: JSON.stringify({ question: args.question }),
       });
-      ctx.background(`council:${runId}`, async () => {
-        try {
-          const { result } = await runCouncilJob(ctx.store, ctx.makeStep(), ctx.model, {
-            user_id: ctx.userId,
-            question: args.question,
-            personaModel: ctx.personaModel,
-            synthModel: ctx.synthModel,
-            runId,
-          });
-          await ctx.poke.push(
-            `Here's the council's verdict on "${args.question}":\n\n${result.synthesis}`,
-          );
-        } catch (e) {
-          await ctx.store.errorRun(runId, JSON.stringify({ error: String((e as Error)?.message ?? e) }));
-        }
-      });
-      return { text: renderCouncilQueued(runId), data: { run_id: runId } };
+      const job: AsyncCouncilJob = {
+        user_id: ctx.userId,
+        runId,
+        question: args.question,
+        personaModel: ctx.personaModel,
+        synthModel: ctx.synthModel,
+      };
+      // Prefer a durable dispatcher (Inngest) when wired; otherwise run the same
+      // executor in-process via `background` (best-effort across serverless freezes).
+      const durable = ctx.dispatchAsyncCouncil ? await ctx.dispatchAsyncCouncil(job) : false;
+      if (!durable) {
+        ctx.background(`council:${runId}`, () =>
+          runAndDeliverCouncil(
+            { store: ctx.store, step: ctx.makeStep(), model: ctx.model, poke: ctx.poke },
+            job,
+          ),
+        );
+      }
+      return { text: renderCouncilQueued(runId), data: { run_id: runId, durable } };
     }
 
     const { runId, result } = await runCouncilJob(ctx.store, ctx.makeStep(), ctx.model, {

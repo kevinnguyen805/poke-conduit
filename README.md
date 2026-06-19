@@ -42,8 +42,12 @@ just Neon:
 - **`Model` port** (`src/model/`) — `ClaudeModel` when `ANTHROPIC_API_KEY` is set, else a
   deterministic `MockModel` (so tests and the demo need zero credentials).
 - **`Step` seam** (`src/durable/step.ts`) — council logic is written once against `Step`. It runs
-  under `LocalStep` (in-process, memoized) inline within Vercel's 300 s budget today; the
-  `fromInngestStep` adapter is the documented upgrade to true multi-hour durability.
+  under `LocalStep` (in-process, memoized) inline within Vercel's 300 s budget by default, or on
+  **Inngest** for true serverless durability when configured. The async council routes through an
+  optional `dispatchAsyncCouncil` provider (`src/durable/inngest.ts`): set `INNGEST_EVENT_KEY` (and
+  `npm install inngest`) and runs survive function freezes with per-step retries; leave it unset and
+  it transparently falls back to the inline path. Inngest stays out of the 3-dep core — it's loaded
+  lazily through a non-literal import, so the package is needed only when the feature is switched on.
 - **Two credentials, two directions** — *inbound* (Poke → conduit: `Bearer`/`x-poke-key` +
   injected `x-poke-user-id`, gated by `MCP_AUTH_ENFORCE`) is distinct from *outbound* (conduit →
   Poke: `POKE_API_KEY` to Poke's inbound API, which makes Poke **act on** the message).
@@ -54,8 +58,8 @@ No credentials required — it falls back to pg-mem + MockModel + a mock Poke cl
 
 ```bash
 npm install
-npm test          # 120 tests (unit + tool handlers + full MCP wire e2e)
-npm run demo      # narrated, self-asserting end-to-end walkthrough (21 checks)
+npm test          # 128 tests (unit + tool handlers + full MCP wire e2e)
+npm run demo      # narrated, self-asserting end-to-end walkthrough (22 checks)
 npm run serve     # local HTTP server: GET / · POST /mcp · GET /cron · GET /healthz
 ```
 
@@ -83,20 +87,20 @@ caveat, and how to point Poke at your `/mcp` endpoint.
 ## Project layout
 
 ```
-api/       mcp.ts · cron.ts · healthz.ts · _store.ts   (Vercel edge entry points)
+api/       mcp.ts · cron.ts · inngest.ts · healthz.ts · _store.ts   (Vercel edge entry points)
 public/    index.html                                  (static landing page served at /)
 src/
   config.ts · ids.ts
   store/   types · schema · sql (SqlStore) · pgmem · pg (Neon) · index
   model/   types · mock · claude · index
-  durable/ step.ts (Step · LocalStep · fromInngestStep)
+  durable/ step.ts (Step · LocalStep · fromInngestStep) · inngest.ts (optional durable provider)
   poke/    index.ts (PokeClient · HttpPokeClient · MockPokeClient)
   agents/  personas · worker · council · orchestrator
   tools/   backlog · reminders · status · recipes · recipe-runner · council · index
   mcp/     auth.ts · server.ts (JSON-RPC)
   http/    core.ts (Request→Response core) · ratelimit.ts (RateLimiter port)
   scheduler.ts · render.ts · serve.ts · demo.ts
-test/      store · model · step · council · scheduler · render · auth · tools · recipe-runner · mcp · ratelimit
+test/      store · model · step · council · council-async · scheduler · render · auth · tools · recipe-runner · mcp · ratelimit
 docs/superpowers/  specs/ · plans/
 ```
 

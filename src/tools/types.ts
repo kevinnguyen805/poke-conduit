@@ -11,6 +11,15 @@ export interface JsonSchema {
   required?: string[];
 }
 
+/** The unit of work handed to a durable async-council dispatcher (Inngest in prod). */
+export interface AsyncCouncilJob {
+  user_id: string;
+  runId: string;
+  question: string;
+  personaModel: string;
+  synthModel: string;
+}
+
 /** Everything a tool handler needs. Injected per-request by the MCP server. */
 export interface ToolContext {
   store: Store;
@@ -28,6 +37,11 @@ export interface ToolContext {
    * freeze it, so async delivery is best-effort unless Inngest is wired.
    */
   background: (label: string, fn: () => Promise<void>) => void;
+  /**
+   * Durable async-council dispatcher (Inngest in prod). Returns true if it took
+   * ownership of the run; absent or false → fall back to best-effort `background`.
+   */
+  dispatchAsyncCouncil?: (job: AsyncCouncilJob) => Promise<boolean>;
 }
 
 export interface ToolResult {

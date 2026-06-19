@@ -151,6 +151,8 @@ async function main(): Promise<void> {
   });
   user(queued.text);
   check("returns immediately (nothing pushed yet)", poke.pushes.length === before);
+  check("ran inline (no Inngest wired → durable=false)", queued.data?.durable === false);
+  say("  (set INNGEST_EVENT_KEY + `npm i inngest` to make this run survive serverless freezes)");
   say("  …deliberating in the background…");
   await drainBackground();
   check("verdict was pushed to the user via Poke", poke.pushes.length === before + 1);

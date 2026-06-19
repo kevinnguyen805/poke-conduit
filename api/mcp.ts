@@ -1,3 +1,4 @@
+import { dispatchCouncilViaInngest } from "../src/durable/inngest";
 import { handleMcp, mcpInfoResponse } from "../src/http/core";
 import { getRateLimiter, getStore } from "./_store";
 
@@ -12,5 +13,8 @@ export default async function handler(req: Request): Promise<Response> {
   // no DATABASE_URL is set.
   if (req.method !== "POST") return mcpInfoResponse(req);
   const [store, rateLimiter] = await Promise.all([getStore(), getRateLimiter()]);
-  return handleMcp(req, { store, rateLimiter });
+  // Inngest is wired unconditionally; `dispatchCouncilViaInngest` returns false
+  // (no import) until INNGEST_EVENT_KEY is set, so this stays inert by default
+  // and async council falls back to the in-process inline path.
+  return handleMcp(req, { store, rateLimiter, dispatchAsyncCouncil: dispatchCouncilViaInngest });
 }

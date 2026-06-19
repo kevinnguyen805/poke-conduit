@@ -23,6 +23,8 @@ export interface CoreDeps {
   rateLimiter?: RateLimiter;
   /** Run work after responding (async council). Defaults to fire-and-forget. */
   background?: ToolContext["background"];
+  /** Durable async-council dispatcher (Inngest). Omit → inline best-effort. */
+  dispatchAsyncCouncil?: ToolContext["dispatchAsyncCouncil"];
   /** Override config.mcpAuthEnforce (tests/local). */
   enforceAuth?: boolean;
   /** Supply the wall-clock for the scheduler (tests pass a fixed value). */
@@ -46,6 +48,7 @@ function makeToolContextFactory(deps: CoreDeps): (userId: string) => ToolContext
     personaModel: config.personaModel,
     synthModel: config.synthModel,
     background,
+    dispatchAsyncCouncil: deps.dispatchAsyncCouncil,
   });
 }
 

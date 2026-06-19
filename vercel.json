@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/mcp", "destination": "/api/mcp" },
     { "source": "/cron", "destination": "/api/cron" },
+    { "source": "/inngest", "destination": "/api/inngest" },
     { "source": "/healthz", "destination": "/api/healthz" }
   ],
   "crons": [{ "path": "/api/cron", "schedule": "0 13 * * *" }]
