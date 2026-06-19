@@ -15,7 +15,7 @@ export interface PushResult {
 }
 
 export interface PokeClient {
-  push(instruction: string): Promise<PushResult>;
+  push(instruction: string, opts?: { userId?: string; kind?: string }): Promise<PushResult>;
 }
 
 /** Real outbound client. MVP is single-tenant: one POKE_API_KEY → its owner. */
@@ -25,7 +25,7 @@ export class HttpPokeClient implements PokeClient {
     private url: string,
   ) {}
 
-  async push(instruction: string): Promise<PushResult> {
+  async push(instruction: string, _opts?: { userId?: string; kind?: string }): Promise<PushResult> {
     const res = await fetch(this.url, {
       method: "POST",
       headers: {
@@ -42,7 +42,7 @@ export class HttpPokeClient implements PokeClient {
 export class MockPokeClient implements PokeClient {
   readonly pushes: string[] = [];
 
-  async push(instruction: string): Promise<PushResult> {
+  async push(instruction: string, _opts?: { userId?: string; kind?: string }): Promise<PushResult> {
     this.pushes.push(instruction);
     return { ok: true, status: 200 };
   }

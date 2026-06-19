@@ -37,11 +37,12 @@ export async function runScheduler(
   store: Store,
   poke: PokeClient,
   now: string,
+  phrase: (t: Trigger) => string = proactiveInstruction,
 ): Promise<SchedulerResult> {
   const due = await store.dueTriggers(now);
   const fired: FiredTrigger[] = [];
   for (const t of due) {
-    const res = await poke.push(proactiveInstruction(t));
+    const res = await poke.push(phrase(t), { userId: t.user_id, kind: t.kind });
     if (t.recurrence === "daily") {
       await store.markTriggerFired(t.id, nextDaily(t.fire_at, now));
     } else {
