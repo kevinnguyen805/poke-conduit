@@ -9,11 +9,13 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "demo": "tsx src/demo.ts",
-    "serve": "tsx src/serve.ts"
+    "serve": "tsx src/serve.ts",
+    "spectrum": "tsx src/spectrum/run.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
     "@neondatabase/serverless": "^0.10.4",
+    "spectrum-ts": "^5.0.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
